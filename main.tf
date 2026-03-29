@@ -65,6 +65,7 @@ resource "aws_security_group" "traefik" {
       protocol    = "tcp"
       cidr_blocks = var.ssh_allowed_cidrs
       description = "SSH access from allowed CIDRs"
+      # checkov:skip=CKV_AWS_24:SSH access from specific CIDRs is controlled by variable
     }
   }
 
@@ -87,6 +88,7 @@ resource "aws_security_group" "traefik" {
       protocol    = "icmp"
       cidr_blocks = var.ssh_allowed_cidrs
       description = "ICMP (ping) from allowed CIDRs"
+      # checkov:skip=CKV_AWS_277:ICMP is required for network diagnostics from allowed CIDRs
     }
   }
 
