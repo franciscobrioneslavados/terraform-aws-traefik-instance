@@ -1,31 +1,46 @@
-output "traefik_public_ip" {
-  description = "Public IP of Traefik server"
-  value       = aws_eip.traefik.public_ip
-}
-
-output "traefik_public_dns" {
-  description = "Public DNS of Traefik server"
-  value       = aws_eip.traefik.public_dns
-}
-
 output "traefik_instance_id" {
-  description = "EC2 Instance ID"
+  description = "ID of the Traefik Instance"
   value       = aws_instance.traefik_proxy.id
 }
 
+output "traefik_instance_arn" {
+  description = "ARN of the Traefik Instance"
+  value       = aws_instance.traefik_proxy.arn
+}
+
+output "traefik_instance_public_ip" {
+  description = "Public IP (EIP) of the Traefik Instance"
+  value       = aws_eip.traefik.public_ip
+}
+
+output "traefik_instance_private_ip" {
+  description = "Private IP of the Traefik Instance"
+  value       = aws_instance.traefik_proxy.private_ip
+}
+
 output "traefik_security_group_id" {
-  description = "Security Group ID"
+  description = "Security Group ID of the Traefik Instance"
   value       = aws_security_group.traefik.id
 }
 
-output "ssh_connection" {
-  description = "SSH command to connect"
-  value       = "ssh -i '${aws_key_pair.key_pair.key_name}.pem' ubuntu@${aws_eip.traefik.public_dns}"
+output "key_pair_name" {
+  description = "Key pair name used by the Traefik Instance"
+  value       = var.key_name != null ? var.key_name : aws_key_pair.key_pair[0].key_name
 }
 
-output "private_key_path" {
-  description = "Path to private key"
-  value       = "${path.module}/${aws_key_pair.key_pair.key_name}.pem"
+output "private_key_file" {
+  description = "Local path to the private key file (if auto-generated)"
+  value       = var.key_name != null ? null : "${path.module}/${var.environment}-${var.project_name}-key.pem"
+}
+
+output "ssh_command" {
+  description = "SSH command to connect to the Traefik Instance"
+  value       = "ssh -i ${var.key_name != null ? "~/.ssh/${var.key_name}.pem" : "${var.environment}-${var.project_name}-key.pem"} ubuntu@${aws_eip.traefik.public_ip}"
+}
+
+output "chmod_command" {
+  description = "Command to set correct permissions on the private key"
+  value       = var.key_name != null ? null : "chmod 400 ${var.environment}-${var.project_name}-key.pem"
 }
 
 output "traefik_urls" {

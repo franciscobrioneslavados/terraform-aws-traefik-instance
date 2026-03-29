@@ -1,7 +1,7 @@
 locals {
   global_tags = {
     "Environment" = var.environment
-    "ManagedBy"   = "Terraform"
+    "ManagedBy"   = var.managed_by
     "OwnerName"   = var.owner_name
     "ProjectName" = var.project_name
   }
@@ -12,6 +12,7 @@ data "aws_availability_zones" "available" {
 }
 
 data "aws_ami" "ubuntu_22_04" {
+  count       = var.ami_id != null ? 0 : 1
   most_recent = true
   owners      = ["099720109477"]
 
@@ -55,12 +56,15 @@ resource "aws_security_group" "traefik" {
     description = "HTTPS from all"
   }
 
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = var.ssh_allowed_cidr
-    description = "SSH from allowed CIDRs"
+  dynamic "ingress" {
+    for_each = length(var.ssh_allowed_cidrs) > 0 ? [1] : []
+    content {
+      from_port   = 22
+      to_port     = 22
+      protocol    = "tcp"
+      cidr_blocks = var.ssh_allowed_cidrs
+      description = "SSH access from allowed CIDRs"
+    }
   }
 
   dynamic "ingress" {
@@ -69,17 +73,20 @@ resource "aws_security_group" "traefik" {
       from_port   = 8080
       to_port     = 8080
       protocol    = "tcp"
-      cidr_blocks = var.ssh_allowed_cidr
+      cidr_blocks = var.ssh_allowed_cidrs
       description = "Traefik Dashboard"
     }
   }
 
-  ingress {
-    from_port   = -1
-    to_port     = -1
-    protocol    = "icmp"
-    cidr_blocks = var.ssh_allowed_cidr
-    description = "ICMP ping"
+  dynamic "ingress" {
+    for_each = length(var.ssh_allowed_cidrs) > 0 ? [1] : []
+    content {
+      from_port   = -1
+      to_port     = -1
+      protocol    = "icmp"
+      cidr_blocks = var.ssh_allowed_cidrs
+      description = "ICMP (ping) from allowed CIDRs"
+    }
   }
 
   egress {
@@ -95,14 +102,16 @@ resource "aws_security_group" "traefik" {
   })
 }
 
-resource "tls_private_key" "traefik" {
+resource "tls_private_key" "key_pair" {
+  count     = var.key_name != null ? 0 : 1
   algorithm = "RSA"
   rsa_bits  = 4096
 }
 
 resource "aws_key_pair" "key_pair" {
+  count      = var.key_name != null ? 0 : 1
   key_name   = "${var.environment}-${var.project_name}-key"
-  public_key = tls_private_key.traefik.public_key_openssh
+  public_key = tls_private_key.key_pair[0].public_key_openssh
 
   tags = merge(local.global_tags, {
     Name = "${var.project_name}-keypair"
@@ -110,18 +119,19 @@ resource "aws_key_pair" "key_pair" {
 }
 
 resource "local_file" "private_key" {
-  content         = tls_private_key.traefik.private_key_pem
-  filename        = "${path.module}/${aws_key_pair.key_pair.key_name}.pem"
+  count           = var.key_name != null ? 0 : 1
+  content         = tls_private_key.key_pair[0].private_key_pem
+  filename        = "${path.module}/${var.environment}-${var.project_name}-key.pem"
   file_permission = "0400"
 }
 
 resource "aws_instance" "traefik_proxy" {
-  ami           = data.aws_ami.ubuntu_22_04.id
-  instance_type = var.traefik_instance_type
+  ami           = var.ami_id != null ? var.ami_id : data.aws_ami.ubuntu_22_04[0].id
+  instance_type = var.instance_type
   subnet_id     = var.public_subnet_ids[0]
 
   vpc_security_group_ids      = [aws_security_group.traefik.id]
-  key_name                    = aws_key_pair.key_pair.key_name
+  key_name                    = var.key_name != null ? var.key_name : aws_key_pair.key_pair[0].key_name
   associate_public_ip_address = true
   source_dest_check           = false
 

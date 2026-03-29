@@ -1,44 +1,58 @@
-variable "aws_region" {
-  description = "AWS region"
-  type        = string
-}
-
 variable "vpc_id" {
-  description = "ID of the VPC"
+  description = "ID of the VPC where the Traefik Instance will be deployed"
   type        = string
 }
 
 variable "public_subnet_ids" {
-  description = "List of public subnet IDs"
+  description = "List of public subnet IDs for Traefik deployment (first one will be used)"
   type        = list(string)
 }
 
 variable "project_name" {
-  description = "Project name for tagging"
+  description = "Project name for resource tagging"
   type        = string
   default     = "traefik-proxy"
 }
 
 variable "environment" {
-  description = "Environment name"
+  description = "Environment name (e.g., dev, staging, prod)"
   type        = string
   default     = "development"
 }
 
 variable "owner_name" {
-  description = "Owner name for tagging"
+  description = "Owner name for resource tagging"
   type        = string
 }
 
-variable "traefik_instance_type" {
-  description = "EC2 instance type for Traefik"
+variable "instance_type" {
+  description = "EC2 instance type for the Traefik Instance (e.g., t3.micro, t2.micro)"
   type        = string
   default     = "t3.micro"
 }
 
-variable "ssh_allowed_cidr" {
-  description = "CIDR blocks allowed for SSH"
+variable "ssh_allowed_cidrs" {
+  description = "CIDR blocks allowed for SSH access. Empty list disables SSH access."
   type        = list(string)
+  default     = []
+}
+
+variable "ami_id" {
+  description = "Custom AMI ID to use. Null uses Ubuntu 22.04."
+  type        = string
+  default     = null
+}
+
+variable "key_name" {
+  description = "Existing key pair name to use. Null generates a new key pair automatically."
+  type        = string
+  default     = null
+}
+
+variable "managed_by" {
+  description = "ManagedBy tag value"
+  type        = string
+  default     = "Terraform"
 }
 
 variable "domain_name" {

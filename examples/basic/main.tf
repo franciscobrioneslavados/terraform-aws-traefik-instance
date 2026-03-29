@@ -16,7 +16,6 @@ provider "aws" {
 module "traefik_proxy" {
   source = "../../"
 
-  aws_region        = var.aws_region
   vpc_id            = var.vpc_id
   public_subnet_ids = var.public_subnet_ids
 
@@ -24,8 +23,8 @@ module "traefik_proxy" {
   environment  = var.environment
   owner_name   = var.owner_name
 
-  traefik_instance_type = var.traefik_instance_type
-  ssh_allowed_cidr      = var.ssh_allowed_cidr
+  instance_type     = var.instance_type
+  ssh_allowed_cidrs = var.ssh_allowed_cidrs
 
   domain_name               = var.domain_name
   traefik_dashboard_enabled = var.traefik_dashboard_enabled
@@ -62,15 +61,16 @@ variable "owner_name" {
   type        = string
 }
 
-variable "traefik_instance_type" {
+variable "instance_type" {
   description = "EC2 instance type for Traefik"
   type        = string
   default     = "t3.micro"
 }
 
-variable "ssh_allowed_cidr" {
+variable "ssh_allowed_cidrs" {
   description = "CIDR blocks allowed for SSH"
   type        = list(string)
+  default     = []
 }
 
 variable "domain_name" {
@@ -85,17 +85,12 @@ variable "traefik_dashboard_enabled" {
   default     = false
 }
 
-output "traefik_public_ip" {
+output "traefik_instance_public_ip" {
   description = "Public IP of Traefik server"
-  value       = module.traefik_proxy.traefik_public_ip
+  value       = module.traefik_proxy.traefik_instance_public_ip
 }
 
-output "traefik_public_dns" {
-  description = "Public DNS of Traefik server"
-  value       = module.traefik_proxy.traefik_public_dns
-}
-
-output "ssh_connection" {
+output "ssh_command" {
   description = "SSH command to connect"
-  value       = module.traefik_proxy.ssh_connection
+  value       = module.traefik_proxy.ssh_command
 }
