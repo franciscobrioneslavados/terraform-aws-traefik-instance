@@ -211,6 +211,32 @@ terraform init
 terraform apply
 ```
 
+## Versioning
+
+This module uses [GitHub Releases](https://github.com/franciscobrioneslavados/terraform-aws-traefik-instance/releases) for versioning.
+
+### Using a Specific Version
+
+```hcl
+module "traefik_proxy" {
+  source = "git::https://github.com/franciscobrioneslavados/terraform-aws-traefik-instance.git//.?ref=v1.5.2"
+
+  # ... variables
+}
+```
+
+### Using Latest (main branch)
+
+```hcl
+module "traefik_proxy" {
+  source = "git::https://github.com/franciscobrioneslavados/terraform-aws-traefik-instance.git//.?ref=main"
+
+  # ... variables
+}
+```
+
+**Note**: Using `main` branch may include breaking changes. Recommended for development only.
+
 ## References
 
 - [Traefik v3 Documentation](https://doc.traefik.io/traefik/)
