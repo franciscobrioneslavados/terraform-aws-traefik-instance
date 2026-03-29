@@ -1,0 +1,21 @@
+aws_region  = "us-east-1"
+vpc_id      = "vpc-xxxxxxxxxxxxxxxxx"
+CIDR_block  = "10.0.0.0/16"
+
+public_subnet_ids = ["subnet-xxxxxxxxxxxxxxxxx"]
+
+project_name  = "traefik-proxy"
+environment  = "development"
+owner_name   = "Tu Nombre"
+
+traefik_instance_type = "t3.micro"
+
+ssh_allowed_cidr = ["tu-ip/32"]
+
+# Dejar vacio para usar solo con IP (sin dominio ni SSL)
+domain_name          = ""
+cloudflare_api_token = ""
+cloudflare_zone_id   = ""
+
+# Opcional: habilitar dashboard de Traefik
+traefik_dashboard_enabled = false
