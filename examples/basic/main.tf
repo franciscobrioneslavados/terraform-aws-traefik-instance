@@ -18,6 +18,7 @@ module "traefik_proxy" {
 
   vpc_id            = var.vpc_id
   public_subnet_ids = var.public_subnet_ids
+  key_name          = var.key_name
 
   project_name = var.project_name
   environment  = var.environment
@@ -83,6 +84,11 @@ variable "traefik_dashboard_enabled" {
   description = "Enable Traefik dashboard"
   type        = bool
   default     = false
+}
+
+variable "key_name" {
+  description = "Existing key pair name to use"
+  type        = string
 }
 
 output "traefik_instance_public_ip" {

@@ -106,29 +106,6 @@ resource "aws_security_group" "traefik" {
   })
 }
 
-resource "tls_private_key" "key_pair" {
-  count     = var.key_name != null ? 0 : 1
-  algorithm = "RSA"
-  rsa_bits  = 4096
-}
-
-resource "aws_key_pair" "key_pair" {
-  count      = var.key_name != null ? 0 : 1
-  key_name   = "${var.environment}-${var.project_name}-key"
-  public_key = tls_private_key.key_pair[0].public_key_openssh
-
-  tags = merge(local.global_tags, {
-    Name = "${var.project_name}-keypair"
-  })
-}
-
-resource "local_file" "private_key" {
-  count           = var.key_name != null ? 0 : 1
-  content         = tls_private_key.key_pair[0].private_key_pem
-  filename        = "${path.module}/${var.environment}-${var.project_name}-key.pem"
-  file_permission = "0400"
-}
-
 resource "aws_iam_instance_profile" "traefik" {
   name = "${var.environment}-${var.project_name}-instance-profile"
   role = aws_iam_role.traefik.name
@@ -170,7 +147,7 @@ resource "aws_instance" "traefik_proxy" {
 
   iam_instance_profile        = aws_iam_instance_profile.traefik.name
   vpc_security_group_ids      = [aws_security_group.traefik.id]
-  key_name                    = var.key_name != null ? var.key_name : aws_key_pair.key_pair[0].key_name
+  key_name                    = var.key_name
   associate_public_ip_address = true
   source_dest_check           = false
 
@@ -198,8 +175,6 @@ resource "aws_instance" "traefik_proxy" {
   tags = merge(local.global_tags, {
     Name = "ec2-${var.environment}-${var.project_name}"
   })
-
-  depends_on = [aws_key_pair.key_pair]
 
   # checkov:skip=CKV_AWS_88:Public IP required for reverse proxy
   # checkov:skip=CKV_AWS_126:Detailed monitoring not required for basic setup

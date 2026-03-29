@@ -44,9 +44,8 @@ variable "ami_id" {
 }
 
 variable "key_name" {
-  description = "Existing key pair name to use. Null generates a new key pair automatically."
+  description = "Existing key pair name to use"
   type        = string
-  default     = null
 }
 
 variable "managed_by" {
