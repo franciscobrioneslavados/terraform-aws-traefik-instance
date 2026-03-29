@@ -1,67 +1,70 @@
-# Traefik Proxy - EC2
+# Terraform AWS EC2 Traefik Proxy Module
 
-Reverse proxy y balanceador de carga con **Traefik v3** desplegado en EC2.
+Módulo de Terraform para desplegar un proxy reverso **Traefik v3** en una instancia EC2.
 
-## Sin Cloudflare ni Dominio (Modo IP Directa)
-
-Por defecto funciona con **IP pública** y certificado **self-signed**. Perfecto para pruebas.
-
-## Con Cloudflare y Dominio (Modo SSL)
-
-Opcionalmente puedes agregar dominio y SSL con Let's Encrypt.
-
-## Arquitectura
-
-```
-# Modo IP Directa
-Internet → Traefik (EC2) → Contenedores Docker
-
-# Modo con Dominio
-Internet → Traefik (EC2) → Contenedores Docker
-```
-
-## Configuración Rápida (Sin Dominio)
-
-1. Copia y edita las variables:
-   ```bash
-   cp develop.tfvars.example develop.tfvars
-   ```
-
-2. Edita `develop.tfvars`:
-   ```hcl
-   aws_region  = "us-east-1"
-   vpc_id      = "vpc-xxxxxxxx"
-   public_subnet_ids = ["subnet-xxxxxxxx"]
-   
-   project_name = "traefik-proxy"
-   environment = "development"
-   owner_name  = "Tu Nombre"
-   
-   ssh_allowed_cidr = ["tu-ip/32"]
-   
-   # Dejar vacio para modo IP directa
-   domain_name          = ""
-   cloudflare_api_token = ""
-   cloudflare_zone_id   = ""
-   ```
-
-3. Aplica:
-   ```bash
-   terraform init
-   terraform apply -var-file="develop.tfvars"
-   ```
-
-## Configuración con Dominio y SSL
+## Usar como Módulo
 
 ```hcl
-domain_name          = "tudominio.com"
-cloudflare_api_token = "tu-cloudflare-token"
-cloudflare_zone_id   = "tu-zone-id"
+module "traefik_proxy" {
+  source = "github.com/tu-org/terraform-aws-ec2-traefik-proxy"
+
+  aws_region        = "us-east-1"
+  vpc_id            = "vpc-xxxxxxxx"
+  public_subnet_ids = ["subnet-xxxxxxxx"]
+
+  project_name  = "traefik-proxy"
+  environment   = "production"
+  owner_name    = "Team"
+
+  ssh_allowed_cidr = ["tu-ip/32"]
+}
 ```
 
-## Agregar Servicios
+## Inputs
 
-Usa **labels Docker** en tu `docker-compose.yml`:
+| Variable | Tipo | Default | Descripción |
+|----------|------|---------|-------------|
+| `aws_region` | string | - | Región AWS |
+| `vpc_id` | string | - | ID de la VPC |
+| `public_subnet_ids` | list(string) | - | IDs de subnets públicas |
+| `project_name` | string | `"traefik-proxy"` | Nombre del proyecto |
+| `environment` | string | `"development"` | Entorno |
+| `owner_name` | string | - | Dueño del recurso |
+| `traefik_instance_type` | string | `"t3.micro"` | Tipo de instancia EC2 |
+| `ssh_allowed_cidr` | list(string) | - | CIDRs permitidos para SSH |
+| `domain_name` | string | `""` | Dominio (opcional) |
+| `cloudflare_api_token` | string | `""` | Token Cloudflare (opcional) |
+| `cloudflare_zone_id` | string | `""` | Zone ID Cloudflare (opcional) |
+| `traefik_dashboard_enabled` | bool | `false` | Habilitar dashboard |
+| `traefik_dashboard_users` | string | `""` | Users dashboard (htpasswd) |
+
+## Outputs
+
+| Output | Descripción |
+|--------|-------------|
+| `traefik_public_ip` | IP pública del servidor |
+| `traefik_public_dns` | DNS público del servidor |
+| `traefik_instance_id` | ID de la instancia EC2 |
+| `traefik_security_group_id` | ID del Security Group |
+| `ssh_connection` | Comando SSH para conectar |
+| `private_key_path` | Ruta a la clave privada |
+| `traefik_urls` | URLs de Traefik y dashboard |
+
+## Ejemplos
+
+Ver carpeta `examples/` para ejemplos completos.
+
+```bash
+cd examples/basic
+cp terraform.tfvars.example terraform.tfvars
+# Editar terraform.tfvars con tus valores
+terraform init
+terraform apply
+```
+
+## Agregar Servicios Docker
+
+Usa labels en tu `docker-compose.yml`:
 
 ```yaml
 services:
@@ -79,55 +82,15 @@ networks:
     external: true
 ```
 
-## Endpoints Después del Deploy
-
-| Servicio | URL |
-|----------|-----|
-| HTTP | `http://<IP-PUBLICA>` |
-| Dashboard | `http://<IP-PUBLICA>:8080` (si habilitado) |
-
-## Comandos Útiles
-
-```bash
-# SSH a la instancia
-ssh -i mi-key.pem ubuntu@<IP-PUBLICA>
-
-# Ver estado de Traefik
-docker ps | grep traefik
-
-# Ver logs
-docker logs traefik -f
-
-# Ver contenedores descubiertos
-curl http://localhost:8080/api/http/routers
-
-# Reiniciar
-cd /opt/traefik && docker-compose restart
-```
-
-## Estructura del Proyecto
+## Estructura del Módulo
 
 ```
 ├── main.tf                    # Recursos AWS
-├── variables.tf               # Variables
-├── outputs.tf                # Outputs
-├── provider.tf               # Providers
+├── variables.tf               # Variables de entrada
+├── outputs.tf                 # Outputs del módulo
+├── provider.tf                # Provider config
 ├── templates/
-│   └── user-data-traefik.sh # Script de init
-├── develop.tfvars.example
-└── README.md
+│   └── user-data-traefik.sh # Script de bootstrap
+└── examples/
+    └── basic/                # Ejemplo de uso
 ```
-
-## Recursos Creados
-
-| Recurso | Descripción |
-|---------|-------------|
-| EC2 Instance | Ubuntu 22.04, t3.micro |
-| Security Group | HTTP, HTTPS, SSH, Dashboard |
-| Elastic IP | IP pública fija |
-| Key Pair | SSH automático |
-
-## Costos
-
-- **EC2 t3.micro**: ~$8.50/mes (o gratis con free tier)
-- **EIP**: ~$3.60/mes (si no usa free tier)
