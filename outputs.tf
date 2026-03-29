@@ -25,7 +25,7 @@ output "traefik_security_group_id" {
 
 output "ssh_command" {
   description = "SSH command to connect to the Traefik Instance"
-  value       = "ssh -i ~/.ssh/${var.key_name}.pem ubuntu@${aws_eip.traefik.public_ip}"
+  value       = var.key_name != null ? "ssh -i ~/.ssh/${var.key_name}.pem ubuntu@${aws_eip.traefik.public_ip}" : "key_name not provided"
 }
 
 output "traefik_urls" {

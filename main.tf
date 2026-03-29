@@ -7,10 +7,6 @@ locals {
   }
 }
 
-data "aws_availability_zones" "available" {
-  state = "available"
-}
-
 data "aws_ami" "ubuntu_22_04" {
   count       = var.ami_id != null ? 0 : 1
   most_recent = true
@@ -28,10 +24,6 @@ data "aws_ami" "ubuntu_22_04" {
 }
 
 data "aws_vpc" "selected" {
-  id = var.vpc_id
-}
-
-data "aws_vpc" "vpc_info" {
   id = var.vpc_id
 }
 
@@ -160,7 +152,7 @@ resource "aws_instance" "traefik_proxy" {
   user_data = templatefile("${path.module}/templates/user-data-traefik.sh", {
     environment               = var.environment
     domain_name               = var.domain_name != "" ? var.domain_name : "local"
-    resolver                  = cidrhost(data.aws_vpc.vpc_info.cidr_block, 2)
+    resolver                  = cidrhost(data.aws_vpc.selected.cidr_block, 2)
     traefik_dashboard_enabled = var.traefik_dashboard_enabled
     traefik_dashboard_users   = var.traefik_dashboard_users
   })
