@@ -84,3 +84,9 @@ variable "traefik_dashboard_users" {
   type        = string
   default     = ""
 }
+
+variable "enable_cloudwatch_agent" {
+  description = "Enable CloudWatch Agent for monitoring"
+  type        = bool
+  default     = false
+}
